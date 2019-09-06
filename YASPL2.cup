@@ -1,0 +1,361 @@
+import java_cup.Lexer;
+
+import java_cup.runtime.*;
+import java_cup.runtime.Scanner;
+import com.scalified.tree.*;
+import com.scalified.tree.multinode.*;
+import java.util.*;
+
+import Visitor.*;
+
+
+parser code {:
+
+    
+    Scanner s;
+     YASPL2Cup(Scanner s, String k){ this.s=s; }
+
+   public VisitableNode<String> makeNode(String name, VisitableNode<String> ... childrens){
+
+           VisitableNode<String> toReturn = new VisitableNode<String>(name);
+
+           for(int i = 0; i < childrens.length; i ++){
+               toReturn.add(childrens[i]);
+           }
+
+           return toReturn;
+       }
+
+	public void print(String x){
+			System.out.println(x);
+	}
+
+     public VisitableNode<String> makeNode(String name, ArrayList<VisitableNode<String>> childrens){
+
+               VisitableNode<String> toReturn = new VisitableNode<String>(name);
+
+                for (VisitableNode<String> node : childrens)
+                   toReturn.add(node);
+
+               return toReturn;
+           }
+
+            public void syntax_error(Symbol cur_token){
+            /*recupera riga e colonna dell'errore*/
+            int row = cur_token.left+1;
+            int col = cur_token.right;
+            String message = "L'errore si trova in riga "+ row +" e in colonna "+col+" su token: "+this.symbl_name_from_id(cur_token.sym)+"\nToken Expected: ";
+            //System.out.println("L'errore si trova in riga "+ row +" e in colonna "+col+" su token: "+this.symbl_name_from_id(cur_token.sym));
+            //System.out.println("Token expeted:");
+            for(int i=0;i<this.expected_token_ids().size();i++)
+            	message+=this.symbl_name_from_id(this.expected_token_ids().get(i))+ "  ";
+				
+				//System.out.println(this.symbl_name_from_id(this.expected_token_ids().get(i)));
+			
+				report_error(message, null);
+				this.done_parsing();
+				
+
+			 }
+
+			public void report_error(String message, Object info){
+			
+				 System.out.println("ERRORE: "+ message );
+				 
+			}
+
+
+:}
+
+init with {:   :};
+scan with {: return s.next_token(); :};
+
+
+terminal           HEAD, START, SEMI, COMMA, DEF;
+terminal           NAME;
+terminal           LPAR, RPAR, COLON, LGPAR, RGPAR;
+terminal           INT_CONST, DOUBLE_CONST, STRING_CONST;
+terminal           PLUS, MINUS, TIMES, DIV;
+terminal           INT, BOOL, DOUBLE;
+terminal           READ, WRITE;
+terminal           TRUE, FALSE;
+terminal           ASSIGN;
+terminal           IF, THEN, WHILE, DO, ELSE, FOR;
+terminal           GT, GE, LT, LE, EQ, NOT, AND, OR, UMINUS;
+
+
+non terminal VisitableNode<String>  Programma, Var_decl, Def_decl, Body, Comp_stat, Simple_stat, Expr, Bool_expr, BOOL_CONST;
+non terminal ArrayList<VisitableNode<String>> Decls, Statments, Var_decls, Par_decls, Stat, Out_values, Exprs;
+non terminal String Type, Arith_op, Bool_op, Rel_op;
+non terminal Vector<String> Vars, Types;
+
+precedence left PLUS, MINUS;
+precedence left TIMES, DIV;
+precedence left ASSIGN, READ, WRITE;
+precedence left ELSE;
+precedence left GT, LT; 
+precedence left EQ, GE, LE;
+precedence left AND, OR;
+precedence left COMMA;
+precedence left UMINUS;
+
+
+Programma     ::= HEAD:h Decls:ds START Statments:sts {: VisitableNode<String> Program_node = new VisitableNode<String>("PROGRAM_NODE",  ds, sts);
+														 
+														 	RESULT = Program_node;
+														 	NodeVisitor visitor = new NodeVisitor();
+                                        					visitor.visit( RESULT);
+															System.out.println("INIZIO CONTROLLO SEMANTICO");
+							                       	  		if(!visitor.SemanticAnalysis(RESULT)) System.out.println("Errore: " + visitor.Error);
+															else {
+															visitor.saveSource(visitor.getCode(RESULT));
+														 	visitor.saveFileXML();
+                                        				 	System.out.println("Albero costruito correttamente, vedi file.xml"); 
+															}
+
+														:};
+
+Decls         ::= Var_decl:v Decls:ds {: ArrayList<VisitableNode<String>> decls_list = new ArrayList<VisitableNode<String>>();  
+												decls_list.add( v);
+												decls_list.addAll( ds);
+												RESULT = decls_list;
+										:}
+					| Def_decl:d Decls:ds {: ArrayList<VisitableNode<String>> decls_list = new ArrayList<VisitableNode<String>>();  
+												decls_list.add( d);
+												decls_list.addAll( ds);
+												RESULT = decls_list;
+										:}
+					|  {: RESULT = new ArrayList<VisitableNode<String>>(); :} ;
+
+Statments     ::= Stat:s Statments:sts {: ( sts).addAll( s); RESULT =  sts; :}
+					| Stat:s {: ArrayList<VisitableNode<String>> Stat_list = new ArrayList<VisitableNode<String>>(); 
+								Stat_list.addAll( s);
+								RESULT = Stat_list;  :};
+
+Var_decl      ::= Type:t Vars:vs SEMI {: 
+												
+											ArrayList<VisitableNode<String>> childrens = new ArrayList<VisitableNode<String>>();
+											VisitableNode<String> root = makeNode("VAR_DECL_NODE", makeNode(t.toString()));
+											
+																							
+												for (int i=0;i<vs.size(); i++) {
+													VisitableNode<String> tmp = new VisitableNode<String>("VAR_NODE");
+													VisitableNode<String> tmp2 = new VisitableNode<String>("ID_NODE", vs.get(i));
+													tmp.add(tmp2);
+													childrens.add(tmp); 
+												}		
+												for (int i=0;i<vs.size()-1;i++) {
+													childrens.get(i).add(childrens.get(i+1));
+												}
+												root.add(childrens.get(0));
+												root.setLexem(String.valueOf(vs.size()));
+												RESULT = root;
+												
+										:};
+
+Type          ::= INT:i {: RESULT="Integer"; :}|BOOL:b {: RESULT="Boolean"; :}|DOUBLE:d {: RESULT="Double"; :};
+
+Vars          ::= NAME:n COMMA Vars:vs {: Vector<String> x = new Vector<String>(vs);
+    									 x.add(n.toString());  RESULT = x; :}
+					| NAME:n {:  Vector<String> x = new Vector<String>(); x.add(n.toString());  RESULT = x; :};
+
+Types         ::= Type:t COMMA:c Types:ts {: Vector<String> x = new Vector<String>(ts);
+    									 x.add(t.toString()); RESULT = x; :}
+					| Type:t {:  Vector<String> x = new Vector<String>(); x.add(t.toString()); RESULT = x; :};
+
+Def_decl      ::= DEF:d NAME:n LPAR:lp Var_decls:vds RPAR:rp COLON:c Par_decls:pds Body:b {:  VisitableNode<String> ProcDecl_node = new VisitableNode<String>("PROC_DECL_NODE",  vds,  pds); 
+																							  ProcDecl_node.setLexem(n.toString());
+																							  ProcDecl_node.add(new VisitableNode<String>("ID_NODE",n.toString()));
+																							  ProcDecl_node.add( b);
+																							  RESULT = ProcDecl_node;
+
+																						:};
+
+Var_decls     ::= Var_decl:vd Var_decls:vds {: 	ArrayList<VisitableNode<String>> var_decl_list = new ArrayList<VisitableNode<String>>();  
+												var_decl_list.add( vd);
+												var_decl_list.addAll( vds);
+												RESULT = var_decl_list;
+											:}
+					|{: RESULT = new ArrayList<VisitableNode<String>>(); :};
+
+Par_decls     ::= Var_decl:vd Par_decls:pds {:	ArrayList<VisitableNode<String>> var_decl_list = new ArrayList<VisitableNode<String>>();  
+												(vd).setData("PAR_DECLS");
+												var_decl_list.add( vd);
+												var_decl_list.addAll( pds);
+												RESULT = var_decl_list;	:}
+					| Var_decl:vd {: ArrayList<VisitableNode<String>> par_decl_list = new ArrayList<VisitableNode<String>>();  
+									(vd).setData("PAR_DECLS");
+									 par_decl_list.add( vd);
+									 RESULT = par_decl_list; :};
+
+Body          ::= LGPAR:lgp Var_decls:vds Statments:sts RGPAR:rgp SEMI:s {: if(vds.isEmpty()) 
+																				RESULT = new VisitableNode<String>("BODY_NODE", sts);  
+																			else 
+																				RESULT = new VisitableNode<String>("BODY_NODE", vds,  sts);
+																			
+																		 :};
+
+Comp_stat     ::= LGPAR:lgp Var_decls:vds Statments:sts RGPAR:rgp {:if(vds.isEmpty()) 
+																				RESULT = new VisitableNode<String>("COMP_STAT_NODE", sts);  
+																			else {
+																				RESULT = new VisitableNode<String>("COMP_STAT_NODE", vds,  sts);
+																				
+																			} 
+																:};
+
+Stat          ::= Comp_stat:cs {: ArrayList<VisitableNode<String>> cs_list = new ArrayList<VisitableNode<String>>(); cs_list.add( cs); RESULT = cs_list ; :}
+					| Simple_stat:ss {: ArrayList<VisitableNode<String>> ss_list = new ArrayList<VisitableNode<String>>(); ss_list.add( ss); RESULT = ss_list ; :};
+
+Simple_stat   ::= Vars:v READ:r Types:t SEMI:s {: if(v.size() != t.size()) { report_fatal_error("Syntax Error-> Invalid READ operation before row "+ cur_token.left +" -> "+v.toString()+"READ"+t.toString(),null); }
+												  ArrayList<VisitableNode<String>> id_list = new ArrayList<VisitableNode<String>>();
+												  ArrayList<VisitableNode<String>> type_list = new ArrayList<VisitableNode<String>>();
+												  for(int i = 0; i<v.size(); i++){
+												  	id_list.add( new VisitableNode("ID_NODE",v.get(i)));
+												  	type_list.add( makeNode(t.get(i)));
+												  }
+												VisitableNode<String> Read_OP_node = new VisitableNode<String>("READ_OP_NODE",id_list,type_list);  
+												RESULT = Read_OP_node;
+												:}
+					| Out_values:ov WRITE:w SEMI:s {: VisitableNode<String> Write_OP_node = new VisitableNode<String>("WRITE_OP_NODE",  ov);  
+														RESULT = Write_OP_node;
+													:}
+													
+					| NAME:n ASSIGN:a Expr:e SEMI:s {: VisitableNode<String> id_node = new VisitableNode<String>("ID_NODE",n.toString());
+														VisitableNode<String> ee = e;  
+														RESULT = makeNode("ASSIGN_NODE",id_node, ee);
+														
+													:}
+					| NAME:n ASSIGN:a BOOL_CONST:bc SEMI:s {: VisitableNode<String> id_node = new VisitableNode<String>("ID_NODE",n.toString());
+														    	RESULT = makeNode("ASSIGN_NODE",id_node, bc);
+														
+													:}
+					| NAME:n LPAR:lp Exprs:es COLON:c Vars:vs RPAR:rp SEMI:s {:   
+																				  
+																				  ArrayList<VisitableNode<String>> id_list = new ArrayList<VisitableNode<String>>();
+												  								  for(int i = 0; i<vs.size(); i++){
+												  	 								id_list.add( new VisitableNode("ID_NODE",vs.get(i)));
+												  										}
+																				  VisitableNode<String> CALL_OP_node = new VisitableNode<String>("CALL_OP_NODE",id_list, es);  
+																				  CALL_OP_node.add(	new VisitableNode<String>("ID_NODE",n.toString()));
+																				  CALL_OP_node.setLexem(n.toString());
+																				  RESULT = CALL_OP_node;
+																			
+																				:}
+					| IF:i LPAR:lp Bool_expr:be RPAR:rp THEN:t Comp_stat:cs1 ELSE:e Comp_stat:cs2 SEMI:s {:	RESULT = makeNode("IFTHENELSE_NODE",be,cs1,cs2); :}
+					| IF:i LPAR:lp Bool_expr:be RPAR:rp THEN:t Comp_stat:cs SEMI:s {: RESULT = makeNode("IFTHEN_NODE",be,cs); :}
+					| WHILE:w LPAR:lp Bool_expr:be RPAR:rp DO:d Comp_stat:cs SEMI:s {: RESULT = makeNode("WHILE_NODE",be,cs); :}
+					| FOR:f LPAR:lp NAME:n1 ASSIGN:a1 Expr:e1 SEMI Bool_expr:be SEMI NAME:n2 ASSIGN:a2 Expr:e2 SEMI RPAR:rp Comp_stat:cs SEMI:s {: 
+																						VisitableNode<String> id_node1 = new VisitableNode<String>("ID_NODE",n1.toString());
+																						VisitableNode<String> assign1 = makeNode("ASSIGN_NODE",id_node1, e1);
+																						VisitableNode<String> id_node2 = new VisitableNode<String>("ID_NODE",n2.toString());
+																						VisitableNode<String> assign2 = makeNode("ASSIGN_NODE",id_node2, e2);
+																						RESULT = makeNode("FOR_NODE",assign1,be,assign2,cs); 
+																						:};
+			
+Out_values    ::= Expr:e COMMA:c Out_values:ovs {: ( ovs).add( e); RESULT =  ovs; :}
+					| STRING_CONST:sc COMMA:c Out_values:ovs {: ( ovs).add(new VisitableNode<String>("STRING_CONST",sc.toString())); RESULT =  ovs;   :}
+					| Expr:e {: ArrayList<VisitableNode<String>> outvalues_list = new ArrayList<VisitableNode<String>>(); 
+								outvalues_list.add(e);
+								RESULT = outvalues_list; :}
+					| STRING_CONST:sc {: ArrayList<VisitableNode<String>> outvalues_list = new ArrayList<VisitableNode<String>>(); 
+										outvalues_list.add(new VisitableNode<String>("STRING_CONST",sc.toString()));
+										RESULT = outvalues_list; :};
+
+Exprs         ::= Expr:e COMMA:c Exprs:es {:  ( es).add( e); RESULT =  es; :}
+					| Expr:e {: ArrayList<VisitableNode<String>> Exprs_list = new ArrayList<VisitableNode<String>>(); 
+								Exprs_list.add(e);
+								RESULT = Exprs_list; :};
+
+Expr          ::= INT_CONST:ic {: RESULT =  new VisitableNode<String>("INT_CONST", ic.toString()); :}
+					| DOUBLE_CONST:dc {: RESULT = new VisitableNode<String>("DOUBLE_CONST", dc.toString()); :}
+					| Expr:e1 Arith_op:ao Expr:e2 {: 
+													    switch (ao.toString()) {
+																case "+":
+																	 RESULT = makeNode("ADD_NODE", e1, e2);
+																	 RESULT.setLexem("+");
+																	break;
+																
+																case "-":
+																	 RESULT = makeNode("MINUS_NODE", e1, e2);
+																	 RESULT.setLexem("-");
+																	break;
+																
+																case "*":
+																	 RESULT = makeNode("MUL_NODE", e1, e2);
+																	 RESULT.setLexem("*");
+																	break;
+																
+																case "/":
+																	 RESULT = makeNode("DIV_NODE", e1, e2);
+																	 RESULT.setLexem("/");
+																	break;
+														
+																default:
+																	 
+																	break;
+																}
+													:}
+													
+					| NAME:n {: RESULT = new VisitableNode<String>("ID_NODE", n.toString()); :}
+					| MINUS:u Expr:e {: RESULT = makeNode("UMINUS_NODE", e); RESULT.setLexem("-"); :} %prec UMINUS
+					| LPAR:lp Expr:e RPAR:rp {: RESULT = e; :};
+
+Arith_op      ::= PLUS {: RESULT = "+"; :}
+					 | MINUS {: RESULT = "-"; :}
+					 | TIMES {: RESULT = "*"; :}
+					 | DIV {: RESULT = "/"; :};
+
+Bool_expr     ::= Bool_expr:be1 Bool_op:bo Bool_expr:be2 {: if(bo=="and"){
+																RESULT = makeNode("AND_NODE",  be1,  be2);
+																RESULT.setLexem("&&");
+															}else {
+																RESULT = makeNode("OR_NODE", be1, be2);  
+															    RESULT.setLexem("||");
+															}
+														 :}
+														 
+					| NOT:n Bool_expr:be {:  RESULT = makeNode("NOT_NODE",  be); RESULT.setLexem("!"); :}
+					| Expr:e1 Rel_op:ro Expr:e2 {:  switch (ro.toString()) {
+																case ">":
+																	 RESULT = makeNode("GT_NODE", e1, e2);
+																	 RESULT.setLexem(">");
+																	 break;
+																case "<":
+																	 RESULT = makeNode("LT_NODE", e1, e2);
+																	 RESULT.setLexem("<");
+																	 break;
+																
+																case ">=":
+																	 RESULT = makeNode("GE_NODE", e1, e2);
+																	 RESULT.setLexem(">=");
+																	 break;
+																
+																case "<=":
+																	 RESULT = makeNode("LE_NODE", e1, e2);
+																	 RESULT.setLexem("<=");
+																	 break;
+																	
+																case "==":
+																	 RESULT = makeNode("EQ_NODE", e1, e2);
+																	 RESULT.setLexem("==");
+																	 break;
+																	 
+																default:
+																	 
+																	break;
+																}  
+																:}
+					| LPAR:lp Bool_expr:be RPAR:rp {: RESULT = be; :}
+					| BOOL_CONST:bc {: RESULT = bc; :};
+
+Bool_op       ::= AND {: RESULT = "and"; :}
+					| OR {: RESULT = "or"; :};
+					
+BOOL_CONST	  ::= TRUE	{: RESULT = makeNode("TRUE"); RESULT.setLexem("1"); :}
+				  | FALSE {: RESULT = makeNode("FALSE"); RESULT.setLexem("0"); :};
+
+Rel_op        ::= GT {: RESULT = ">"; :}
+					| GE {: RESULT = ">="; :}
+					| LT {: RESULT = "<"; :}
+					| LE {: RESULT = "<="; :}
+					| EQ {: RESULT = "=="; :};
