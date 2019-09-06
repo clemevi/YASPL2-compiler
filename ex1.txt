@@ -1,0 +1,86 @@
+head
+def operazioneDouble( double x,y; int op; ):double ris;
+{
+	if(((op == 1)&&(5+3>2))||(x<1))then{
+		ris = x + y;
+	};
+
+	if(op == 2)then{
+		ris = x - y;
+	};
+
+	if(op == 3)then{
+		ris = x * y;
+	};
+
+	if(op == 4)then{
+		ris = x / y;
+	};
+};
+
+def operazioneInt( int x,y,op; ):int ris;
+{
+	bool b;
+	b=true;
+	if(op == 1)then{
+		ris = x + y;
+	};
+
+	if(op == 2)then{
+		ris = x - y;
+	};
+
+	if(op == 3)then{
+		ris = x * y;
+	};
+
+	if(op == 4)then{
+		ris = x / y;
+	};
+};
+
+int flag2,flag,operazione,op1,op2,risultato;
+double op1d,op2d,risultatod;
+
+start
+{
+
+	flag2=1;
+	while(flag2 == 1)do{
+		"Scegliere l'operazione da svolgere, digitare 1 per addizione, 2 per sottrazione, 3 per moltiplicazione e 4 per la divisione."->;
+
+		operazione<-int;
+
+		"Digitare 0 per INT oppure 1 per DOUBLE"->;
+
+		flag<-int;
+
+		if(flag==1) then
+		{
+			"inserisci il primo operando"->;
+			op1<-int;
+			"inserisci il secondo operando"->;
+			op2<-int;
+			operazioneInt(op1,op2,operazione:risultato);
+			"il risultato dell'operazione è ",op2d+op1d*5->;
+		};
+
+		if(flag==2) then
+		{
+			"inserisci il primo operando"->;
+			op1d<-double;
+			"inserisci il secondo operando"->;
+			op2d<-double;
+			operazioneDouble(op1d,op2d,operazione:risultatod);
+			"il risultato dell'operazione è ",risultatod->;
+		}
+		else
+		{
+			"bisogna inserire il tipo degli operandi"->;
+		};
+
+		"digitare 1 per continuare 0 per terminare"->;
+		flag2<-int;
+	};
+
+}

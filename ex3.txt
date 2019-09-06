@@ -1,0 +1,41 @@
+/* PROGRAMMA YASPL2 */
+head
+
+def Somma(double x, y; int xInt, yInt;):double ris1,ris2; int risInt; {
+	
+	ris1 = x + y;
+};
+
+double n1,n2,n3,n4,n5,n6;
+int x,y,z;
+bool b;
+start
+
+{
+	x=1;
+
+	//y=false;
+	
+	//x=-b; //UMINUS di una variabile booleana
+
+	//z="ciao"; //assegnazione di una stringa a un intero
+	
+	//Somma(n1,n2:z); //tipo di z incompatibile per la funzione
+
+	//for(x=3; x>5; x=x-1;) { "il valore di x = ",x->; }; //implementazione ciclo for
+
+	//x,y<-int,int,double; //errore: elenco dei tipi piu lungo dell'elenco delle variabili
+	
+	//x,b<-double,bool; //errore: tipo sbagliato
+
+	//Somma(n1,n2,x,y:n5,n6,x,z); //errore: un parametro in piu
+
+	//Somma(n1,n2,x,y:y,n6,x); //errore: tipo parametro output sbagliato
+	
+	//Somma(z,n1,n2,x,y:n5,n6,x); //errore: tipo parametro input sbagliato
+
+	Somma(n1,n2,x,y:n5,n6,x); //errore: un parametro input in pi
+
+
+
+}

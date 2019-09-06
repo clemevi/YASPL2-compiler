@@ -1,0 +1,135 @@
+/* PROGRAMMA YASPL2 */
+head
+
+def Somma(double x, y;):double risultato; {
+	
+	risultato = x + y;
+};
+
+def Moltiplicazione(double x, y;): double risultato; {	
+	
+	int i;
+	i = 0;
+	risultato = 0;
+
+	while( i < y ) do {
+		i = i + 1;
+		risultato = risultato + x;
+	};
+};
+
+def Divisione(int x, y;): double risultato; {
+	
+	risultato = x / y;
+};
+
+def Potenza(int x, y;): double risultato; {
+
+	int i;
+	i = 0;
+	risultato = x;
+
+	while( i < (y - 1) ) do {
+		i = i + 1;
+		risultato = risultato * x;
+	};
+};
+
+def Fibonacci(int x;): double risultato; {
+	
+	int fib1, fib2, i;
+
+	if ( x == 0 || x == 1) then {
+		risultato = 1;
+	} else {
+		fib1 = 1;
+		fib2 = 1;
+		i = 1;
+
+		while( i < x ) do {
+			risultato = fib1 + fib2;
+			i = i + 1;
+			fib2 = fib1;
+			fib1 = risultato;
+		};
+		
+	};
+};
+
+int scelta, z, k, flag, pigreco;
+double x, y, risultato;
+
+start
+
+{
+	pigreco = 3;
+	flag = 1;
+	while(flag == 1) do {
+
+		"digitare:\n 1. somma di due numeri\n 2. moltipliczione di due numeri\n 3. divisione intera fra due numeri positivi\n 4. elevamento a potenza\n 5. successione di Fibonacci\n"->; 
+		scelta <- int;
+
+		if ( scelta == 1) then {
+			double pigreco;
+			pigreco = 3.14;
+			"pigreco nell'if vale ",pigreco ->;
+
+			"inserire primo operando\n" ->;
+			x <- double;
+			
+			"inserire secondo operando\n" ->;
+			y <- double;
+	
+			Somma( x, y : risultato );
+			"il risultato e' ", risultato ->;
+		};
+
+		"pigreco fuori dall'if vale ",pigreco ->;
+	
+		if ( scelta == 2) then {
+			"inserire primo operando\n" ->;
+			x <- double;
+	
+			"inserire secondo operando\n" ->;
+			y <- double;
+	
+			Moltiplicazione( x, y : risultato );
+			"il risultato e' ", risultato ->;
+		};
+	
+		if ( scelta == 3) then {
+			double scelta;
+			scelta->;
+			"l'operazione e' definita soltato per numeri interi positivi, inserire dividendo\n" ->;
+			z <- int;
+	
+			"inserire divisore\n" ->;
+			k <- int;
+	
+			Divisione( z, k : risultato );
+			"il risultato e'", risultato ->;
+		};
+	
+		if ( scelta == 4) then {
+			"inserire base\n" ->;
+			z <- int;
+	
+			"inserire esponente\n" ->;
+			k <- int;
+	
+			Potenza( z, k : risultato );
+			"il risultato e' ", risultato ->;
+		};
+	
+		if ( scelta == 5) then {
+			"inserire numero\n" ->;
+			z <- int;
+	
+			Fibonacci( z : risultato );
+			"il risultato e' ", risultato ->;
+		};
+		
+		"digitare 1 per continuare, 0 per terminare\n" ->;
+		flag <- int;
+	};
+}
